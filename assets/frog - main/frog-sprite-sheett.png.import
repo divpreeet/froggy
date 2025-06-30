@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cdxivg38end6w"
-path="res://.godot/imported/DinoSprites - mort.png-f96d34a634d93b776a02e453da5e4e94.ctex"
+uid="uid://dry1wvshyqfbu"
+path="res://.godot/imported/frog-sprite-sheett.png-e6c331d66dacf65141781b04a41d379b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://pratice_assets/sheets/DinoSprites - mort.png"
-dest_files=["res://.godot/imported/DinoSprites - mort.png-f96d34a634d93b776a02e453da5e4e94.ctex"]
+source_file="res://assets/frog - main/frog-sprite-sheett.png"
+dest_files=["res://.godot/imported/frog-sprite-sheett.png-e6c331d66dacf65141781b04a41d379b.ctex"]
 
 [params]
 

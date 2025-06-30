@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c2lcoxgjlxlob"
-path="res://.godot/imported/DinoSprites - tard.png-05d951abb737d12219ed09d4ce383eee.ctex"
+uid="uid://df2fcyx463fdp"
+path="res://.godot/imported/ToxicFrogGreenBlue_Hop.png-62cf22ce638862694a16d2906d0ad205.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://pratice_assets/sheets/DinoSprites - tard.png"
-dest_files=["res://.godot/imported/DinoSprites - tard.png-05d951abb737d12219ed09d4ce383eee.ctex"]
+source_file="res://assets/frog - mock/ToxicFrogGreenBlue_Hop.png"
+dest_files=["res://.godot/imported/ToxicFrogGreenBlue_Hop.png-62cf22ce638862694a16d2906d0ad205.ctex"]
 
 [params]
 

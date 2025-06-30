@@ -1,10 +1,12 @@
 [gd_scene load_steps=2 format=3 uid="uid://cahlvmec3nm1p"]
 
-[ext_resource type="PackedScene" uid="uid://bhnni153a4mqe" path="res://Scenes/player.tscn" id="1_x87qo"]
+[ext_resource type="PackedScene" uid="uid://cqgk30jyhqfht" path="res://Scenes/frog.tscn" id="1_x87qo"]
 
 [node name="game_scene" type="Node2D"]
 
-[node name="player" parent="." instance=ExtResource("1_x87qo")]
+[node name="frog" parent="." instance=ExtResource("1_x87qo")]
+position = Vector2(192, 197)
 
 [node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(192, 107)
 zoom = Vector2(3, 3)

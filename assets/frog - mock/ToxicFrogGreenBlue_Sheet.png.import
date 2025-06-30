@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b3ddqynapkfvu"
-path="res://.godot/imported/DinoSprites - vita.png-863dd8f7654179b19aa100b7173b6a8e.ctex"
+uid="uid://iob6iu753lbw"
+path="res://.godot/imported/ToxicFrogGreenBlue_Sheet.png-8f762c48025911ed1e1201c09ad8bab6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://pratice_assets/sheets/DinoSprites - vita.png"
-dest_files=["res://.godot/imported/DinoSprites - vita.png-863dd8f7654179b19aa100b7173b6a8e.ctex"]
+source_file="res://assets/frog - mock/ToxicFrogGreenBlue_Sheet.png"
+dest_files=["res://.godot/imported/ToxicFrogGreenBlue_Sheet.png-8f762c48025911ed1e1201c09ad8bab6.ctex"]
 
 [params]
 

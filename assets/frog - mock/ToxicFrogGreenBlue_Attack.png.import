@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://coggbdrdd6l53"
-path="res://.godot/imported/bg.png-62c023be5d60f228d9a15a4f52ba48ab.ctex"
+uid="uid://csf54a27tlv67"
+path="res://.godot/imported/ToxicFrogGreenBlue_Attack.png-a2f882377102aa5419527ac1dc257f74.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://pratice_assets/misc/bg.png"
-dest_files=["res://.godot/imported/bg.png-62c023be5d60f228d9a15a4f52ba48ab.ctex"]
+source_file="res://assets/frog - mock/ToxicFrogGreenBlue_Attack.png"
+dest_files=["res://.godot/imported/ToxicFrogGreenBlue_Attack.png-a2f882377102aa5419527ac1dc257f74.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://pkhv15j5nkev"
-path="res://.godot/imported/DinoSprites - doux.png-5b4b1207b059dfcf06da13c0bff6ae6c.ctex"
+uid="uid://7flo7xp05aue"
+path="res://.godot/imported/froggy.png-e7dbe9f792b833ee8fd8344dd3b5225a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://pratice_assets/sheets/DinoSprites - doux.png"
-dest_files=["res://.godot/imported/DinoSprites - doux.png-5b4b1207b059dfcf06da13c0bff6ae6c.ctex"]
+source_file="res://assets/frog - main/froggy.png"
+dest_files=["res://.godot/imported/froggy.png-e7dbe9f792b833ee8fd8344dd3b5225a.ctex"]
 
 [params]
 
