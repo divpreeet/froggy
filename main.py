@@ -12,10 +12,15 @@ pygame.display.set_caption("froggy")
 clock = pygame.time.Clock()
 
 
+#game var
+wave = 1
+mosquitoes_ded = 0
+
+
 # movement vars
 velocity = 0.0
 accel = 750
-max_speed = 600
+max_speed = 450
 friction = 0.85
 
 # frog sprite (as a rect for now)
@@ -27,10 +32,22 @@ frog_rect = pygame.Rect(frog_x, frog_y, frog_w, frog_h)
 
 # tongue vars
 tongue_l = 0
-tongue_speed = 4000
+tongue_speed = 3200
 tongue_max = 650
 tongue_shooting = False
 tongue_retracting = False
+
+# item vars
+bullets_rem = 8
+
+# effects
+slowdown_t = 0
+slowdown_active = False
+orig_speed = max_speed
+orig_tongue = tongue_speed
+
+speedup_t = 0
+speedup_active = False
 
 # loading assets
 frog_img = "assets/frog/frog seperate images/"
@@ -38,6 +55,9 @@ frog_img = "assets/frog/frog seperate images/"
 tongue_mid = pygame.image.load("assets/tongue/tongue-base.png").convert_alpha()
 
 tongue_tip = pygame.image.load("assets/tongue/tongue-tip.png")
+
+font = "assets/m6x11-font.ttf"
+game_font = pygame.font.Font(font, 28)
 
 frog_no = 8
 frog_frames = [
@@ -63,6 +83,8 @@ if tongue_l > 0:
         screen.blit(tongue_tip, (tongue_x, tip_y))
 
 
+
+
 # mosquitoes
 class Mosquito:
     def __init__(self):
@@ -70,9 +92,14 @@ class Mosquito:
         self.height = 20
         self.x = random.randint(0, WIDTH)
         self.y = random.randint(0, HEIGHT)
-        self.velox = random.randint(-100, 100)
-        self.veloy = random.randint(-100, 100)
+        self.velox = random.uniform(-250, 250)
+        self.veloy = random.uniform(-250, 250)
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        self.type = random.choices(
+            ["red", "yellow", "blue"],
+            weights=[50, 10, 15],
+            k=1
+            )[0]
     
     def update(self, t):
         self.x += self.velox * t
@@ -93,14 +120,43 @@ class Mosquito:
             self.y = HEIGHT
             self.veloy *= -1
 
+
+
     def draw(self, screen):
-        pygame.draw.rect(screen, (255, 0, 0), self.rect)
+
+        if self.type == "blue":
+            pygame.draw.rect(screen, (0, 0, 255), self.rect)
+        elif self.type == "yellow":
+            pygame.draw.rect(screen, (255, 255, 0), self.rect)
+        elif self.type == "red":
+            pygame.draw.rect(screen, (255, 0, 0), self.rect)
 
 mosquitoes = []
 
 for _ in range(random.randint(1, 15)):
     mosquitoes.append(Mosquito())
 
+# requirment to kill to go to next wave
+mosquitoes_req = len(mosquitoes)
+
+class Bullets():
+    def __init__(self):
+        self.x = frog_rect.centerx
+        self.y = frog_rect.top
+        self.speed = 500
+        self.width = 20
+        self.height = 25
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+    
+    def update(self, t):
+        self.y -= self.speed * t
+        self.rect.center = (int(self.x), int(self.y))
+
+    def draw(self):
+        radius = self.width // 2
+        pygame.draw.circle(screen, (255, 255, 255), (int(self.x), int(self.y)), radius)
+
+bullets = []
 
 def img_aspect(img, max_w, max_h):
     iw, ih = img.get_size()
@@ -108,8 +164,6 @@ def img_aspect(img, max_w, max_h):
     new_size = (int(iw * scale), int(ih * scale))
     return pygame.transform.scale(img, new_size)
 
-
-mosquito = Mosquito()
 running = True
 while running:
 
@@ -119,15 +173,20 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_e:
+                if bullets_rem > 0:
+                    bullets_rem -= 1
+                    bullets.append(Bullets())
+                    
             if event.key == pygame.K_SPACE:
                 if not tongue_shooting and not tongue_retracting:
                     tongue_shooting = True
 
     keys = pygame.key.get_pressed()
     move = 0
-    if keys[pygame.K_LEFT]:
+    if keys[pygame.K_a]:
         move -= 1
-    if keys[pygame.K_RIGHT]:
+    if keys[pygame.K_d]:
         move += 1
 
     velocity += move * accel * t
@@ -178,11 +237,81 @@ while running:
         mosquito.update(t)
         mosquito.draw(screen)
 
+    # draw bullets
+    for bullet in bullets:
+        bullet.update(t)
+        bullet.draw()
+    
+    for bullet in bullets[:]:
+        for mosquito in mosquitoes[:]:
+            if bullet.rect.colliderect(mosquito.rect):
+                mosquitoes.remove(mosquito)
+                mosquitoes_ded += 1
+                bullets.remove(bullet)
+
+                if mosquitoes_ded >= mosquitoes_req:
+                    wave += 1
+                    mosquitoes_ded = 0
+
+                    max_speed += 20
+                    tongue_max += 15
+                    bullets_rem = 5 + (wave * 2)
+
+                    mosquitoes.clear()
+                    for _ in range(random.randint(5, 20)):
+                        mosquitoes.append(Mosquito()) 
+
+                    mosquitoes_req = len(mosquitoes)
+
+    if slowdown_active:
+        slowdown_t -= t
+        if slowdown_t <= 0:
+            slowdown_active = False
+            max_speed = orig_speed
+            tongue_speed = orig_tongue
+    if speedup_active:
+        speedup_t -= t
+        if speedup_t <= 0:
+            speedup_active = False
+            max_speed = orig_speed
+            tongue_speed = orig_tongue
+
+
     # drawing tongue, might make a seperate func
     if tongue_l > 0:
         tongue_w = 45
         tongue_x = frog_scaled_rect.centerx - (tongue_w // 2)
         tongue_y = (frog_scaled_rect.top + 18) + int(frog_h * 1.5) // 4 - tongue_l
+        tongue_rect = pygame.Rect(tongue_x, tongue_y, tongue_w, tongue_l)
+
+        for mosquito in mosquitoes[:]:
+                if tongue_rect.colliderect(mosquito.rect):
+                        if mosquito.type == "blue":
+                            slowdown_t = 15
+                            slowdown_active = True
+                            max_speed = orig_speed // 1.5
+                            tongue_speed = orig_tongue // 1.5
+                        elif mosquito.type == "yellow":
+                            speedup_t = 15
+                            speedup_active = True
+                            max_speed = orig_speed * 1.5
+                            tongue_speed = orig_tongue * 1.5
+
+                        mosquitoes_ded += 1
+                        mosquitoes.remove(mosquito)
+
+                        if mosquitoes_ded >= mosquitoes_req:
+                            wave += 1
+                            mosquitoes_ded = 0
+                            max_speed += 20
+                            tongue_max += 15
+                            bullets_rem = 5 + (wave * 2)
+
+                            mosquitoes.clear()
+                            for _ in range(random.randint(5, 20)):
+                                mosquitoes.append(Mosquito())
+                            
+                            mosquitoes_req = len(mosquitoes)
 
         mid_len = max(0, tongue_l - tongue_tip.get_height())
         mid_h = tongue_mid.get_height()
@@ -200,6 +329,15 @@ while running:
         tip_y = tongue_y - tip_img.get_height()
         screen.blit(tip_img, (tongue_x, tip_y))
 
+    # text
+    bullet_text = game_font.render(f"only {bullets_rem} bullets left!", True, (255, 255, 255))
+    screen.blit(bullet_text, (20, 20))
+
+    wave_text = game_font.render(f"you're on wave {wave}, noob lol", True, (255, 255, 255))
+    screen.blit(wave_text, (20, 50))
+
+    mosquito_text = game_font.render(f"you badman, how dare you kill {mosquitoes_ded} mosquitoes!", True, (255, 255, 255))
+    screen.blit(mosquito_text, (20, 80))
 
     pygame.display.flip()
 
