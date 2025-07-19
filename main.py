@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 
 pygame.init()
 
@@ -11,11 +12,9 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("froggy")
 clock = pygame.time.Clock()
 
-
 #game var
 wave = 1
 mosquitoes_ded = 0
-
 
 # movement vars
 velocity = 0.0
@@ -23,7 +22,7 @@ accel = 750
 max_speed = 450
 friction = 0.85
 
-# frog sprite (as a rect for now)
+# frog sprite 
 frog_w = 60
 frog_h = 40
 frog_x = WIDTH // 2 - frog_w // 2
@@ -59,6 +58,7 @@ tongue_tip = pygame.image.load("assets/tongue/tongue-tip.png")
 font = "assets/m6x11-font.ttf"
 game_font = pygame.font.Font(font, 28)
 
+# animating frog
 frog_no = 8
 frog_frames = [
     pygame.image.load(f"{frog_img}froggy_{i}.png").convert_alpha()
@@ -83,13 +83,24 @@ if tongue_l > 0:
         screen.blit(tongue_tip, (tongue_x, tip_y))
 
 
+# pixel glow
+
+def pixel_glow(radius, color):
+    surf_size = radius * 2
+    glow = pygame.Surface((surf_size, surf_size), pygame.SRCALPHA)
+
+    pygame.draw.circle(glow, (*color, 200), (radius, radius), radius // 2)
+    pygame.draw.circle(glow, (*color, 90), (radius, radius), radius * 3 // 4)
+    pygame.draw.circle(glow, (*color, 30), (radius, radius), radius)
+
+    return glow
 
 
 # mosquitoes
 class Mosquito:
     def __init__(self):
-        self.width = 20
-        self.height = 20
+        self.width = 64
+        self.height = 64
         self.x = random.randint(0, WIDTH)
         self.y = random.randint(0, HEIGHT)
         self.velox = random.uniform(-250, 250)
@@ -100,6 +111,11 @@ class Mosquito:
             weights=[50, 10, 15],
             k=1
             )[0]
+        
+        self.frame_delay = 0.12
+        self.frame_timer = 0
+        self.frame_ind = 0
+        self.direction = "down"
     
     def update(self, t):
         self.x += self.velox * t
@@ -120,16 +136,45 @@ class Mosquito:
             self.y = HEIGHT
             self.veloy *= -1
 
+        if abs(self.velox) > abs(self.veloy):
+            if self.velox > 0:
+                self.direction = "right"
+            else:
+                self.direction = "left"
+        else:
+            if self.veloy < 0:
+                self.direction = "up"
+            else:
+                self.direction = "down"
 
+        self.frame_timer += t
+        if self.frame_timer > self.frame_delay:
+            self.frame_timer = 0
+            self.frame_ind = (self.frame_ind + 1) %  len(mosquito_frames[self.direction])
 
     def draw(self, screen):
-
+        glow = None
         if self.type == "blue":
-            pygame.draw.rect(screen, (0, 0, 255), self.rect)
+            glow = (0, 191, 255)
         elif self.type == "yellow":
-            pygame.draw.rect(screen, (255, 255, 0), self.rect)
-        elif self.type == "red":
-            pygame.draw.rect(screen, (255, 0, 0), self.rect)
+            glow = (255, 215, 0)
+
+        glow_radius = max(self.width, self.height) // 4 
+
+        if glow:
+            glow_surf = pixel_glow(glow_radius, glow)
+            screen.blit(glow_surf, (int(self.x - glow_radius), int(self.y - glow_radius)), special_flags=pygame.BLEND_RGB_ADD)
+
+        shadow_w = int(self.width * 0.7)
+        shadow_h = int(self.height * 0.32)
+        shadow_x = int(self.x - shadow_w / 2)
+        shadow_y = int (self.y + self.height // 2 - shadow_h //2 + 6)
+        shadow_surf = pygame.Surface((shadow_w, shadow_h), pygame.SRCALPHA)
+        pygame.draw.ellipse(shadow_surf, (0, 0, 0, 80), (0, 0, shadow_w, shadow_h))
+        screen.blit(shadow_surf, (shadow_x, shadow_y))
+
+        frame = mosquito_frames[self.direction][self.frame_ind]
+        screen.blit(frame, (int(self.x - self.width // 2), int(self.y - self.height // 2)))
 
 mosquitoes = []
 
@@ -164,6 +209,18 @@ def img_aspect(img, max_w, max_h):
     new_size = (int(iw * scale), int(ih * scale))
     return pygame.transform.scale(img, new_size)
 
+def load_direction_frames(base_folder, direction, size=(64, 64)):
+    dir_path = os.path.join(base_folder, direction)
+    files = sorted([f for f in os.listdir(dir_path) if f.endswith(".png")])
+    return [
+        pygame.transform.scale(pygame.image.load(os.path.join(dir_path, f)).convert_alpha(), size)
+        for f in files
+    ]
+
+mosquito_frames = {}
+for direction in ["up", "down", "left", "right"]:
+    mosquito_frames[direction] = load_direction_frames("assets/mosquito", direction)
+
 running = True
 while running:
 
@@ -173,7 +230,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_e:
+            if event.key == pygame.K_s:
                 if bullets_rem > 0:
                     bullets_rem -= 1
                     bullets.append(Bullets())
@@ -226,7 +283,7 @@ while running:
         frame_time = 0
         frame_ind = (frame_ind + 1) % frog_no
 
-    screen.fill((0, 0, 0))
+    screen.fill((27, 0, 51))
     frog_scaled = img_aspect(frog_frames[frame_ind], frog_w * 1.5, frog_h * 1.5)
     # made the center of the scaled img's rect to the same the the frog_rect, so no offsetting between the tongue happens
     frog_scaled_rect = frog_scaled.get_rect(center = frog_rect.center)
