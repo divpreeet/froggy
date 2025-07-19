@@ -1,6 +1,7 @@
 import pygame
 import random
 import os
+import math
 
 pygame.init()
 
@@ -36,8 +37,10 @@ tongue_max = 650
 tongue_shooting = False
 tongue_retracting = False
 
-# item vars
+# game vars
 bullets_rem = 8
+shake_dur = 0
+shake_mag = 0
 
 # effects
 slowdown_t = 0
@@ -47,6 +50,9 @@ orig_tongue = tongue_speed
 
 speedup_t = 0
 speedup_active = False
+
+# nausea effect
+nausea_t = 0
 
 # loading assets
 frog_img = "assets/frog/frog seperate images/"
@@ -82,25 +88,11 @@ if tongue_l > 0:
         tip_y = tongue_y + middle_len
         screen.blit(tongue_tip, (tongue_x, tip_y))
 
-
-# pixel glow
-
-def pixel_glow(radius, color):
-    surf_size = radius * 2
-    glow = pygame.Surface((surf_size, surf_size), pygame.SRCALPHA)
-
-    pygame.draw.circle(glow, (*color, 200), (radius, radius), radius // 2)
-    pygame.draw.circle(glow, (*color, 90), (radius, radius), radius * 3 // 4)
-    pygame.draw.circle(glow, (*color, 30), (radius, radius), radius)
-
-    return glow
-
-
 # mosquitoes
 class Mosquito:
     def __init__(self):
-        self.width = 64
-        self.height = 64
+        self.width = 72
+        self.height = 72
         self.x = random.randint(0, WIDTH)
         self.y = random.randint(0, HEIGHT)
         self.velox = random.uniform(-250, 250)
@@ -153,28 +145,23 @@ class Mosquito:
             self.frame_ind = (self.frame_ind + 1) %  len(mosquito_frames[self.direction])
 
     def draw(self, screen):
-        glow = None
-        if self.type == "blue":
-            glow = (0, 191, 255)
-        elif self.type == "yellow":
-            glow = (255, 215, 0)
-
-        glow_radius = max(self.width, self.height) // 4 
-
-        if glow:
-            glow_surf = pixel_glow(glow_radius, glow)
-            screen.blit(glow_surf, (int(self.x - glow_radius), int(self.y - glow_radius)), special_flags=pygame.BLEND_RGB_ADD)
-
-        shadow_w = int(self.width * 0.7)
-        shadow_h = int(self.height * 0.32)
-        shadow_x = int(self.x - shadow_w / 2)
-        shadow_y = int (self.y + self.height // 2 - shadow_h //2 + 6)
-        shadow_surf = pygame.Surface((shadow_w, shadow_h), pygame.SRCALPHA)
-        pygame.draw.ellipse(shadow_surf, (0, 0, 0, 80), (0, 0, shadow_w, shadow_h))
-        screen.blit(shadow_surf, (shadow_x, shadow_y))
-
         frame = mosquito_frames[self.direction][self.frame_ind]
         screen.blit(frame, (int(self.x - self.width // 2), int(self.y - self.height // 2)))
+
+        if self.type == "blue":
+            bar = (0, 191, 255)
+        elif self.type == "yellow":
+            bar = (255, 215, 0)
+        else:
+            bar = None
+
+        if bar:
+            bar_h = 4
+            bar_w = 20
+            bar_x = int(self.x - bar_w // 2)
+            bar_y = int(self.y - self.height // 2 + 15)
+
+            pygame.draw.rect(screen, bar, (bar_x, bar_y, bar_w, bar_h), border_radius=2)
 
 mosquitoes = []
 
@@ -197,9 +184,9 @@ class Bullets():
         self.y -= self.speed * t
         self.rect.center = (int(self.x), int(self.y))
 
-    def draw(self):
+    def draw(self, surf):
         radius = self.width // 2
-        pygame.draw.circle(screen, (255, 255, 255), (int(self.x), int(self.y)), radius)
+        pygame.draw.circle(surf, (255, 255, 255), (int(self.x), int(self.y)), radius)
 
 bullets = []
 
@@ -209,13 +196,25 @@ def img_aspect(img, max_w, max_h):
     new_size = (int(iw * scale), int(ih * scale))
     return pygame.transform.scale(img, new_size)
 
-def load_direction_frames(base_folder, direction, size=(64, 64)):
+def load_direction_frames(base_folder, direction, size=(72, 72)):
     dir_path = os.path.join(base_folder, direction)
     files = sorted([f for f in os.listdir(dir_path) if f.endswith(".png")])
     return [
         pygame.transform.scale(pygame.image.load(os.path.join(dir_path, f)).convert_alpha(), size)
         for f in files
     ]
+
+def sinwaves(surf, time, amp, wavelen, speed):
+    w, h = surf.get_size()
+    result = pygame.Surface((w, h), pygame.SRCALPHA)
+    strip_h = 4
+
+    for y in range(0, h, strip_h):
+        offset = int(amp * math.sin(2 * math.pi * (y / wavelen) + speed  * time))
+        rect = pygame.Rect(0, y, w, strip_h)
+
+        result.blit(surf, (offset, y), rect)
+    return result
 
 mosquito_frames = {}
 for direction in ["up", "down", "left", "right"]:
@@ -225,6 +224,9 @@ running = True
 while running:
 
     t = clock.tick(FPS) / 1000
+
+    temp_surf = pygame.Surface((WIDTH, HEIGHT))
+    temp_surf.fill((100, 150, 120))
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -283,21 +285,20 @@ while running:
         frame_time = 0
         frame_ind = (frame_ind + 1) % frog_no
 
-    screen.fill((27, 0, 51))
     frog_scaled = img_aspect(frog_frames[frame_ind], frog_w * 1.5, frog_h * 1.5)
     # made the center of the scaled img's rect to the same the the frog_rect, so no offsetting between the tongue happens
     frog_scaled_rect = frog_scaled.get_rect(center = frog_rect.center)
-    screen.blit(frog_scaled, frog_scaled_rect)
+    temp_surf.blit(frog_scaled, frog_scaled_rect)
 
     # drawing mosquitoes
     for mosquito in mosquitoes:
         mosquito.update(t)
-        mosquito.draw(screen)
+        mosquito.draw(temp_surf)
 
     # draw bullets
     for bullet in bullets:
         bullet.update(t)
-        bullet.draw()
+        bullet.draw(temp_surf)
     
     for bullet in bullets[:]:
         for mosquito in mosquitoes[:]:
@@ -333,7 +334,6 @@ while running:
             max_speed = orig_speed
             tongue_speed = orig_tongue
 
-
     # drawing tongue, might make a seperate func
     if tongue_l > 0:
         tongue_w = 45
@@ -344,11 +344,18 @@ while running:
         for mosquito in mosquitoes[:]:
                 if tongue_rect.colliderect(mosquito.rect):
                         if mosquito.type == "blue":
+                            speedup_active = False
+                            speedup_t = 0
                             slowdown_t = 15
                             slowdown_active = True
+                            nausea_t = 1.5
                             max_speed = orig_speed // 1.5
                             tongue_speed = orig_tongue // 1.5
+                            shake_dur = 0.3
+                            shake_mag = 15
                         elif mosquito.type == "yellow":
+                            slowdown_active = False
+                            slowdown_t = 0
                             speedup_t = 15
                             speedup_active = True
                             max_speed = orig_speed * 1.5
@@ -379,22 +386,61 @@ while running:
         while covered < mid_len:
             part_h = min(mid_h, mid_len - covered)
             part = scaled_mid.subsurface((0, 0, tongue_w, part_h))
-            screen.blit(part, (tongue_x, tongue_y + covered))
+            temp_surf.blit(part, (tongue_x, tongue_y + covered))
             covered += part_h
-
+        
         tip_img = pygame.transform.scale(tongue_tip, (tongue_w, tongue_tip.get_height()))
         tip_y = tongue_y - tip_img.get_height()
-        screen.blit(tip_img, (tongue_x, tip_y))
+        temp_surf.blit(tip_img, (tongue_x, tip_y))
+
+    if nausea_t > 0:
+        shake_x = 0
+        shake_y = 0
+    elif shake_dur > 0:
+        shake_dur -= t
+        shake_x = random.randint(-shake_mag, shake_mag)
+        shake_y = random.randint(-shake_mag, shake_mag)
+    else:
+        shake_x = 0
+        shake_y = 0
 
     # text
+    box_x, box_y = 14, 14
+    box_w, box_h = 500, 96
+
+    text_bg = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
+    pygame.draw.rect(text_bg, (20, 30, 30, 150), (0, 0, box_w, box_h), border_radius=18)
+    temp_surf.blit(text_bg, (box_x, box_y))
+
     bullet_text = game_font.render(f"only {bullets_rem} bullets left!", True, (255, 255, 255))
-    screen.blit(bullet_text, (20, 20))
+    temp_surf.blit(bullet_text, (box_x + 12, box_y + 8))
 
     wave_text = game_font.render(f"you're on wave {wave}, noob lol", True, (255, 255, 255))
-    screen.blit(wave_text, (20, 50))
+    temp_surf.blit(wave_text, (box_x + 12, box_y + 36))
 
-    mosquito_text = game_font.render(f"you badman, how dare you kill {mosquitoes_ded} mosquitoes!", True, (255, 255, 255))
-    screen.blit(mosquito_text, (20, 80))
+    mosquito_text = game_font.render(f"you madman, how dare you kill {mosquitoes_ded} mosquitoes!", True, (255, 255, 255))
+    temp_surf.blit(mosquito_text, (box_x + 12, box_y + 64))
+
+    effect_y = 120
+
+    if slowdown_active:
+        stat_text = game_font.render("SLOWDOWN IS ACTIVE!", True, (80, 200, 255))
+        temp_surf.blit(stat_text, (20, effect_y))
+    elif speedup_active:
+        stat_text = game_font.render("SPEEDUP IS ACTIVE!", True, (255, 230, 50))
+        temp_surf.blit(stat_text, (20, effect_y))
+
+    if nausea_t > 0:
+        time_now = pygame.time.get_ticks() / 1000
+        wavy_surf = sinwaves(temp_surf, time_now, amp=8, wavelen=80, speed=4)
+        screen.blit(wavy_surf, (0, 0))
+        nausea_t -= t
+    elif slowdown_active:
+        shift = 5
+        wave_surface = pygame.transform.smoothscale(temp_surf, (WIDTH + shift, HEIGHT + shift))
+        screen.blit(wave_surface, (-shift // 2 + shake_x, -shift // 2 + shake_y))
+    else:
+        screen.blit(temp_surf, (shake_x, shake_y))
 
     pygame.display.flip()
 
