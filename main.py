@@ -2,6 +2,7 @@ import pygame
 import random
 import os
 import math
+import numpy as np
 
 pygame.init()
 
@@ -216,6 +217,27 @@ def sinwaves(surf, time, amp, wavelen, speed):
         result.blit(surf, (offset, y), rect)
     return result
 
+
+def frenzy(surf, intensity=180, cycle_speed = 5.0):
+    array_rgb = pygame.surfarray.array3d(surf)
+    array_alpha = pygame.surfarray.array_alpha(surf)
+    mask = array_alpha > 0
+    t = pygame.time.get_ticks() / 1000.0
+
+    red = (np.sin(cycle_speed * t) * 127  + 128).astype(np.uint8)
+    green = (np.sin(cycle_speed * t + 2) * 127 + 128).astype(np.uint8)    
+    blue = (np.sin(cycle_speed * t + 4) * 127 + 128).astype(np.uint8)
+
+    # cast the colors over thge image
+    array_rgb[..., 0][mask] = (array_rgb[..., 0][mask] * 0.2 + red * 0.8).astype(np.uint8)
+    array_rgb[..., 1][mask] = (array_rgb[..., 1][mask] * 0.2 + green * 0.8).astype(np.uint8)
+    array_rgb[..., 2][mask] = (array_rgb[..., 2][mask] * 0.2 + blue * 0.8).astype(np.uint8)
+
+    surf = pygame.Surface(surf.get_size(), pygame.SRCALPHA)
+    pygame.surfarray.blit_array(surf, array_rgb)
+    pygame.surfarray.pixels_alpha(surf)[:] = array_alpha
+    return surf
+
 mosquito_frames = {}
 for direction in ["up", "down", "left", "right"]:
     mosquito_frames[direction] = load_direction_frames("assets/mosquito", direction)
@@ -286,9 +308,14 @@ while running:
         frame_ind = (frame_ind + 1) % frog_no
 
     frog_scaled = img_aspect(frog_frames[frame_ind], frog_w * 1.5, frog_h * 1.5)
-    # made the center of the scaled img's rect to the same the the frog_rect, so no offsetting between the tongue happens
-    frog_scaled_rect = frog_scaled.get_rect(center = frog_rect.center)
-    temp_surf.blit(frog_scaled, frog_scaled_rect)
+    if speedup_active:
+        frenzy_frog = frenzy(frog_scaled)
+        frog_scaled_rect = frenzy_frog.get_rect(center = frog_rect.center)
+        temp_surf.blit(frenzy_frog, frog_scaled_rect)
+    else:
+        # made the center of the scaled img's rect to the same the the frog_rect, so no offsetting between the tongue happens
+        frog_scaled_rect = frog_scaled.get_rect(center = frog_rect.center)
+        temp_surf.blit(frog_scaled, frog_scaled_rect)
 
     # drawing mosquitoes
     for mosquito in mosquitoes:
