@@ -310,7 +310,7 @@ def show_instructions(surf):
         "instructions:",
         "- use A and D keys to move the frog left and right.",
         "- press SPACE to shoot the tongue.",
-        "- Press S to shoot bullets (you only have a limited amount!).",
+        "- press S to shoot bullets (you only have a limited amount!).",
         "- eat mosquitoes with tongue or kill them with the bullets to progress waves.",
         "- blue mosquitoes slow you down.",
         "- yelow mosquitoes speed you up.",
@@ -318,7 +318,7 @@ def show_instructions(surf):
         "- enjoy!"
     ]
 
-    card_w = 680
+    card_w = 880
     card_h = 320
     card_x = (WIDTH - card_w) // 2 
     card_y = (HEIGHT - card_h) // 2
