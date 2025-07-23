@@ -128,7 +128,7 @@ class Mosquito:
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
         self.type = random.choices(
             ["red", "yellow", "blue"],
-            weights=[70, 0, 10],
+            weights=[70, 5, 8],
             k=1
             )[0]
         
