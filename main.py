@@ -259,24 +259,41 @@ def sinwaves(surf, time, amp, wavelen, speed):
 
 
 def frenzy(surf, intensity=180, cycle_speed = 5.0):
-    array_rgb = pygame.surfarray.array3d(surf)
-    array_alpha = pygame.surfarray.array_alpha(surf)
-    mask = array_alpha > 0
-    t = pygame.time.get_ticks() / 1000.0
+    try:
+        # Try the original frenzy effect with numpy array operations
+        array_rgb = pygame.surfarray.array3d(surf)
+        array_alpha = pygame.surfarray.array_alpha(surf)
+        mask = array_alpha > 0
+        t = pygame.time.get_ticks() / 1000.0
 
-    red = (np.sin(cycle_speed * t) * 127  + 128).astype(np.uint8)
-    green = (np.sin(cycle_speed * t + 2) * 127 + 128).astype(np.uint8)    
-    blue = (np.sin(cycle_speed * t + 4) * 127 + 128).astype(np.uint8)
+        red = (np.sin(cycle_speed * t) * 127  + 128).astype(np.uint8)
+        green = (np.sin(cycle_speed * t + 2) * 127 + 128).astype(np.uint8)    
+        blue = (np.sin(cycle_speed * t + 4) * 127 + 128).astype(np.uint8)
 
-    # cast the colors over thge image
-    array_rgb[..., 0][mask] = (array_rgb[..., 0][mask] * 0.2 + red * 0.8).astype(np.uint8)
-    array_rgb[..., 1][mask] = (array_rgb[..., 1][mask] * 0.2 + green * 0.8).astype(np.uint8)
-    array_rgb[..., 2][mask] = (array_rgb[..., 2][mask] * 0.2 + blue * 0.8).astype(np.uint8)
+        # cast the colors over thge image
+        array_rgb[..., 0][mask] = (array_rgb[..., 0][mask] * 0.2 + red * 0.8).astype(np.uint8)
+        array_rgb[..., 1][mask] = (array_rgb[..., 1][mask] * 0.2 + green * 0.8).astype(np.uint8)
+        array_rgb[..., 2][mask] = (array_rgb[..., 2][mask] * 0.2 + blue * 0.8).astype(np.uint8)
 
-    surf = pygame.Surface(surf.get_size(), pygame.SRCALPHA)
-    pygame.surfarray.blit_array(surf, array_rgb)
-    pygame.surfarray.pixels_alpha(surf)[:] = array_alpha
-    return surf
+        new_surf = pygame.Surface(surf.get_size(), pygame.SRCALPHA)
+        pygame.surfarray.blit_array(new_surf, array_rgb)
+        pygame.surfarray.pixels_alpha(new_surf)[:] = array_alpha
+        return new_surf
+    except Exception as e:
+        print(str(e))
+        t = pygame.time.get_ticks() / 1000.0
+        
+        new_surf = surf.copy()
+        
+        overlay = pygame.Surface(surf.get_size(), pygame.SRCALPHA)
+        r = int(abs(math.sin(cycle_speed * t)) * 255)
+        g = int(abs(math.sin(cycle_speed * t + 2)) * 255)
+        b = int(abs(math.sin(cycle_speed * t + 4)) * 255)
+        overlay.fill((r, g, b, 100))  
+        
+        new_surf.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
+        
+        return new_surf
 
 def progress_bar(surf, x, y, w, h, progress, bg_clr =(30, 30, 30), fill_clr= (220, 40, 40), border_clr= (10, 10, 10), radius=7, outline=3):
 
@@ -359,9 +376,8 @@ async def main():
                         try:
                             tongue_shooting = True
                             # tongue_sound.play()
-                            print("Tongue shooting activated")
                         except Exception as e:
-                            print(f"Error when shooting tongue: {str(e)}")
+                            print(str(e))
 
         keys = pygame.key.get_pressed()
         move = 0
@@ -408,12 +424,17 @@ async def main():
             frame_ind = (frame_ind + 1) % frog_no
 
         frog_scaled = img_aspect(frog_frames[frame_ind], frog_w * 1.5, frog_h * 1.5)
-        if speedup_active:
-            frenzy_frog = frenzy(frog_scaled)
-            frog_scaled_rect = frenzy_frog.get_rect(center = frog_rect.center)
-            temp_surf.blit(frenzy_frog, frog_scaled_rect)
-        else:
-            # made the center of the scaled img's rect to the same the the frog_rect, so no offsetting between the tongue happens
+        try:
+            if speedup_active:
+                frenzy_frog = frenzy(frog_scaled)
+                frog_scaled_rect = frenzy_frog.get_rect(center = frog_rect.center)
+                temp_surf.blit(frenzy_frog, frog_scaled_rect)
+            else:
+                # made the center of the scaled img's rect to the same the the frog_rect, so no offsetting between the tongue happens
+                frog_scaled_rect = frog_scaled.get_rect(center = frog_rect.center)
+                temp_surf.blit(frog_scaled, frog_scaled_rect)
+        except Exception as e:
+            print(str(e))
             frog_scaled_rect = frog_scaled.get_rect(center = frog_rect.center)
             temp_surf.blit(frog_scaled, frog_scaled_rect)
 
@@ -486,16 +507,20 @@ async def main():
                             max_speed = orig_speed // 1.5
                             tongue_speed = orig_tongue // 1.5
                         elif mosquito.type == "yellow":
-                            slowdown_active = False
-                            slowdown_t = 0
-                            speedup_t = 15
-                            speedup_active = True
-                            max_speed = orig_speed * 1.5
-                            tongue_speed = orig_tongue * 1.5
-                            shake_dur = 0.3
-                            shake_mag = 15
-                            # crazy.play()
-                            # boom.play()
+                            try:
+                                slowdown_active = False
+                                slowdown_t = 0
+                                speedup_t = 15
+                                speedup_active = True
+                                max_speed = orig_speed * 1.5
+                                tongue_speed = orig_tongue * 1.5
+                                shake_dur = 0.3
+                                shake_mag = 15
+                                print("yellow eaten")
+                                # crazy.play()
+                                # boom.play()
+                            except Exception as e:
+                                print(str(e))
 
                         mosquitoes_ded += 1
                         mosquito.stop_sound()
